@@ -30,10 +30,14 @@ Gem::Specification.new do |spec|
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
 
-  spec.files = %w(ph_no_to_word.gemspec) + Dir["*.md", "bin/*", "lib/**/*.rb"]
-  spec.bindir        = "exe"
+  spec.files = %w[ph_no_to_word.gemspec] + Dir["*.md",
+                                               "bin/*",
+                                               "lib/**/*.rb",
+                                               "lib/**/**/*.txt"
+                                              ]
+  spec.bindir        = 'exe'
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
-  spec.require_paths = %w(lib)
+  spec.require_paths = %w[lib]
 
   spec.required_ruby_version = '>= 2.5.3'
   spec.required_rubygems_version = ">= 2.7.6"
