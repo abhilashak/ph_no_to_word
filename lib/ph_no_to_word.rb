@@ -33,13 +33,6 @@ module PhNoToWord
     base.send(:include, Constants)
   end
 
-  def self.included(base)
-    class << base
-      private :_pbt_polymorphic_orphans
-      private :_pbt_nonpolymorphic_orphans
-    end
-  end
-
   # @param phone_no [String]
   # @return words [Array]
   # PhNoToWord::convert "234"
@@ -52,29 +45,80 @@ module PhNoToWord
     unless (ph_numbers & FORBIDDEN_NOS).empty?
       raise MalformattedArgumentError, ERRORS[:malformed_ph_no]
     end
-
     ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
-    puts "ph_to_word_mapping: #{ph_to_word_mapping}"
+    find_word(ph_to_word_mapping)
+  end
 
-    words = find_word(ph_to_word_mapping.first(3))
-    words
+  # finds the matching words and prints it
+  # calls from 0 - 9 chars and finds the matching
+  def self.find_word(char_ary = [])
+    loop_proc = proc do |ary, pos, match|
+      (ary[pos] || []).each do |char|
+        print_result(match + char) if pos > 1
+        loop_proc.call(ary, pos + 1, match + char) if pos < PH_LENGTH
+      end
+    end
+
+    loop_proc.call(char_ary, 0, '')
+  end
+
+  # search matching word and prints it
+  def self.print_result(chars_to_match)
+    result = search_word(chars_to_match)
+    puts "====> #{result}" if result
+  end
+
+  # finds the word with first, second and third character
+  # @param str [String]
+  def self.search_word(str)
+    filename = if str.length > MAX_SPLIT_DEPTH
+                 str.first(MAX_SPLIT_DEPTH) + '.txt'
+               else
+                 str + '.txt'
+               end
+    new_file_path = word_file_folder_path + '/' + filename
+    return nil unless File.file?(new_file_path)
+
+    word_found = print_file_cnt_matches(new_file_path, str)
+    word_found
+  end
+
+  def self.print_file_cnt_matches(file_path, str)
+    word_found = nil
+    File.open(file_path, 'r') do |f|
+      f.each_line do |line|
+        if line.strip.casecmp(str).zero?
+          word_found = line.strip
+        end
+      end
+    end
+    word_found
   end
 
   # @param file_path [String]
   # Ex: file_path: /path/to/dictionary.txt
   def self.split_files(file_path)
     file_path ||= __dir__ + DEFAULT_DICTIONARY_FILE_PATH
+    remove_all_files
     p file_path
     raise FileNotExists unless File.file?(file_path)
 
     File.open(file_path, 'r').each_line do |word|
       word.strip!
       # Create a file based on first 2 characters
-      if word[0] && word[1] && word[2]
-        write_to_file(word[0..2], word, 2)
-      elsif word[0] && word[1]
-        write_to_file(word[0..1], word)
+      if word[0] && word[1] && word[2] && word[3]
+        write_to_file(word[0..3], word)
+      elsif word[0] && word[1] && word[2]
+        write_to_file(word[0..2], word, 1)
       end
+    end
+  end
+
+  # Removes all the files that created by splitting the dictionary
+  def self.remove_all_files
+    [DEFAULT_WORD_FILE_DIR,
+     DEFAULT_WD_FILE_DIR_LVL_2].each do |folder|
+      FileUtils.rm_f Dir.glob("#{__dir__}#{folder}/*")
     end
   end
 
@@ -82,10 +126,11 @@ module PhNoToWord
   # Ex: filename BAL, word BALL
   # Find the file with the filename provided and write the word to it
   #  if file not exists creates a new file with the filename
-  #  level: 1, contains only 2 character words
-  def self.write_to_file(filename, word, level = 1)
-    folder_path = (level == 2 ? DEFAULT_WD_FILE_DIR_LVL_2 : DEFAULT_WORD_FILE_DIR)
-    new_file_path = __dir__ + folder_path + "/#{filename.strip}.txt"
+  # Level 1: text files with 3 char length filename
+  # Level 2: text files with 4 char length filename
+  def self.write_to_file(filename, word, level = 2)
+    folder_path = word_file_folder_path(level)
+    new_file_path = folder_path + "/#{filename.strip.downcase}.txt"
     new_file = if File.file?(new_file_path)
                  File.open(new_file_path, 'a')
                else
@@ -95,13 +140,16 @@ module PhNoToWord
     new_file.close
   end
 
-  def self.find_word(char_ary = [])
-    (0..3).each do |count|
-      puts "char_ary: #{char_ary[count]}"
-    end
+  # Finds the folder path according to the level
+  # Level 1: text files with 3 char length filename
+  # Level 2: text files with 4 char length filename
+  def self.word_file_folder_path(level = 2)
+    return (__dir__ + DEFAULT_WORD_FILE_DIR) if level == 1
+
+    __dir__ + DEFAULT_WD_FILE_DIR_LVL_2
   end
 
   class << self
-    private :find_word, :write_to_file
+    private :find_word, :write_to_file, :search_word, :word_file_folder_path
   end
 end
