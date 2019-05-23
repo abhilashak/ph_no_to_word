@@ -78,6 +78,8 @@ module PhNoToWord
 
   # finds the word with first, second and third character
   # @param str [String]
+  # Level 1: 3 char words
+  # Level 2: > 3 char words
   def self.search_word(str)
     level = (str.length == MIN_WD_LENGTH ? 1 : 2)
     # Ex: str acfdrt
@@ -87,11 +89,22 @@ module PhNoToWord
                  # Ex: str asde, act, aem
                  str + FILE_EXT
                end
-    new_file_path = word_file_folder_path(level) + '/' + filename
+    new_file_path = find_file_to_search(level, filename)
     return nil unless File.file?(new_file_path)
 
     word_found = check_file_cnt_matches(new_file_path, str)
     word_found
+  end
+
+  # if level is 1, search in file three_char_wrds
+  # else search in file with name of first 4 char wrd
+  def self.find_file_to_search(lvl, filename)
+    file_path = if lvl == 1
+                  word_file_folder_path(lvl) + '/' + THREE_CHAR_FILE
+                else
+                  word_file_folder_path(lvl) + '/' + filename
+                end
+    file_path
   end
 
   # @param file_path [String] str [String]
@@ -121,11 +134,11 @@ module PhNoToWord
     File.open(file_path, 'r').each_line do |word|
       word.strip!
       # Create a file based on first 4 characters
-      if word[0] && word[1] && word[2] && word[3]
+      if word.length > MIN_WD_LENGTH
         write_to_file(word[0..3], word)
       # Create a file based on first 3 characters
-      elsif word[0] && word[1] && word[2]
-        write_to_file(word[0..2], word, 1)
+      elsif word.length == MIN_WD_LENGTH
+        write_to_file(word, word, 1)
       end
     end
   end
@@ -146,7 +159,11 @@ module PhNoToWord
   # Level 2: text files with 4 char length filename
   def self.write_to_file(filename, word, level = 2)
     folder_path = word_file_folder_path(level)
-    new_file_path = folder_path + "/#{filename.strip.downcase}" + FILE_EXT
+    new_file_path = if level == 1
+                      folder_path + '/three_char_wrds.txt'
+                    else
+                      folder_path + "/#{filename.strip.downcase}" + FILE_EXT
+                    end
     new_file = if File.file?(new_file_path)
                  File.open(new_file_path, 'a')
                else
