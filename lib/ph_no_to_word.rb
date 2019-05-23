@@ -21,6 +21,7 @@ require 'ph_no_to_word/constants'
 require 'ph_no_to_word/error'
 require 'ph_no_to_word/logger'
 require 'ph_no_to_word/helpers'
+require 'fileutils'
 
 # The base module that handles major methods
 module PhNoToWord
@@ -84,7 +85,7 @@ module PhNoToWord
     level = (str.length == MIN_WD_LENGTH ? 1 : 2)
     # Ex: str acfdrt
     filename = if str.length > MAX_SPLIT_DEPTH
-                 str.first(MAX_SPLIT_DEPTH) + FILE_EXT
+                 str[0..MAX_SPLIT_DEPTH-1] + FILE_EXT
                else
                  # Ex: str asde, act, aem
                  str + FILE_EXT
@@ -147,7 +148,13 @@ module PhNoToWord
   def self.remove_all_files
     [DEFAULT_WORD_FILE_DIR,
      DEFAULT_WD_FILE_DIR_LVL_2].each do |folder|
-      FileUtils.rm_f Dir.glob("#{__dir__}#{folder}/*")
+      directory_name = "#{__dir__}#{folder}"
+
+      if File.file?(directory_name)
+        FileUtils.rm_f Dir.glob("#{directory_name}/*")
+      else
+        FileUtils.mkdir_p directory_name
+      end
     end
   end
 

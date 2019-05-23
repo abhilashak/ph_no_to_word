@@ -33,7 +33,8 @@ Gem::Specification.new do |spec|
   spec.files = %w[ph_no_to_word.gemspec] + Dir["*.md",
                                                "bin/*",
                                                "lib/**/*.rb",
-                                               "lib/**/**/*.txt"
+                                               "lib/**/**/*.txt",
+                                               "lib/**/**/**/*.txt"
                                               ]
   spec.bindir        = 'exe'
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }

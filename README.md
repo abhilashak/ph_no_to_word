@@ -25,6 +25,7 @@ Or install it yourself as:
 ## Usage
 
 PhNoToWord.convert '2282668687'
+Results:
 * catamounts
 * acta, mounts
 * act, amounts
