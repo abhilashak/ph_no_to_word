@@ -46,49 +46,64 @@ module PhNoToWord
       raise MalformattedArgumentError, ERRORS[:malformed_ph_no]
     end
     ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
+    p ph_to_word_mapping
     find_word(ph_to_word_mapping)
   end
 
   # finds the matching words and prints it
   # calls from 0 - 9 chars and finds the matching
-  def self.find_word(char_ary = [])
+  def self.find_word(char_ary = [], start = 0, str = '')
     loop_proc = proc do |ary, pos, match|
       (ary[pos] || []).each do |char|
-        print_result(match + char) if pos > 1
+        result = print_result(match + char) if pos > 1
+        # call again if there is a scope of second word
+        # if the word matches and have length of less than 7
+        if result && result.length < MAX_FST_WD_LEN
+          find_word(char_ary[result.length..-1], 0, '')
+        end
+        # call again until the last phone no reaches
         loop_proc.call(ary, pos + 1, match + char) if pos < PH_LENGTH
       end
     end
 
-    loop_proc.call(char_ary, 0, '')
+    loop_proc.call(char_ary, start, str)
   end
 
   # search matching word and prints it
   def self.print_result(chars_to_match)
     result = search_word(chars_to_match)
     puts "====> #{result}" if result
+    result
   end
 
   # finds the word with first, second and third character
   # @param str [String]
   def self.search_word(str)
+    level = (str.length == MIN_WD_LENGTH ? 1 : 2)
+    # Ex: str acfdrt
     filename = if str.length > MAX_SPLIT_DEPTH
-                 str.first(MAX_SPLIT_DEPTH) + '.txt'
+                 str.first(MAX_SPLIT_DEPTH) + FILE_EXT
                else
-                 str + '.txt'
+                 # Ex: str asde, act, aem
+                 str + FILE_EXT
                end
-    new_file_path = word_file_folder_path + '/' + filename
+    new_file_path = word_file_folder_path(level) + '/' + filename
     return nil unless File.file?(new_file_path)
 
-    word_found = print_file_cnt_matches(new_file_path, str)
+    word_found = check_file_cnt_matches(new_file_path, str)
     word_found
   end
 
-  def self.print_file_cnt_matches(file_path, str)
+  # @param file_path [String] str [String]
+  # Ex: file_path /path/to/file/act.txt, str: acr
+  def self.check_file_cnt_matches(file_path, str)
     word_found = nil
     File.open(file_path, 'r') do |f|
       f.each_line do |line|
+        # exit loop if finds the str from dictionary
         if line.strip.casecmp(str).zero?
           word_found = line.strip
+          break
         end
       end
     end
@@ -105,9 +120,10 @@ module PhNoToWord
 
     File.open(file_path, 'r').each_line do |word|
       word.strip!
-      # Create a file based on first 2 characters
+      # Create a file based on first 4 characters
       if word[0] && word[1] && word[2] && word[3]
         write_to_file(word[0..3], word)
+      # Create a file based on first 3 characters
       elsif word[0] && word[1] && word[2]
         write_to_file(word[0..2], word, 1)
       end
@@ -130,7 +146,7 @@ module PhNoToWord
   # Level 2: text files with 4 char length filename
   def self.write_to_file(filename, word, level = 2)
     folder_path = word_file_folder_path(level)
-    new_file_path = folder_path + "/#{filename.strip.downcase}.txt"
+    new_file_path = folder_path + "/#{filename.strip.downcase}" + FILE_EXT
     new_file = if File.file?(new_file_path)
                  File.open(new_file_path, 'a')
                else
