@@ -2,7 +2,7 @@
 
   ph_no_to_word allows given 10 character phone number to convert into a word
   that is contained in a dictionary.
-  The phone number should not contain 0 or 1. The matching words contain atleast
+  The phone number should not contain 0 or 1. The matching words contain atleast 3 
   characters.
 
 ## Installation
@@ -24,13 +24,16 @@ Or install it yourself as:
 
 ## Usage
 
+```ruby
 PhNoToWord.convert '2282668687'
+
 Results:
 * catamounts
 * acta, mounts
 * act, amounts
 * act, contour
 * cat, boot, our
+```
 
 ## Contributing
 

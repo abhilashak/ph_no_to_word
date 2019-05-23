@@ -47,7 +47,6 @@ module PhNoToWord
       raise MalformattedArgumentError, ERRORS[:malformed_ph_no]
     end
     ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
-    p ph_to_word_mapping
     find_word(ph_to_word_mapping)
   end
 
@@ -70,7 +69,7 @@ module PhNoToWord
     loop_proc.call(char_ary, start, str)
   end
 
-  # search matching word and prints it
+  # search matching word and print it
   def self.print_result(chars_to_match)
     result = search_word(chars_to_match)
     puts "====> #{result}" if result
@@ -85,7 +84,7 @@ module PhNoToWord
     level = (str.length == MIN_WD_LENGTH ? 1 : 2)
     # Ex: str acfdrt
     filename = if str.length > MAX_SPLIT_DEPTH
-                 str[0..MAX_SPLIT_DEPTH-1] + FILE_EXT
+                 str[0..MAX_SPLIT_DEPTH - 1] + FILE_EXT
                else
                  # Ex: str asde, act, aem
                  str + FILE_EXT
@@ -127,9 +126,8 @@ module PhNoToWord
   # @param file_path [String]
   # Ex: file_path: /path/to/dictionary.txt
   def self.split_files(file_path)
-    file_path ||= __dir__ + DEFAULT_DICTIONARY_FILE_PATH
     remove_all_files
-    p file_path
+    file_path ||= __dir__ + DEFAULT_DICTIONARY_FILE_PATH
     raise FileNotExists unless File.file?(file_path)
 
     File.open(file_path, 'r').each_line do |word|
