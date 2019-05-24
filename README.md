@@ -21,21 +21,51 @@ Or install it yourself as:
 
 
 ## Usage
+After installing the gem goto
 
 ```ruby
-PhNoToWord.convert '2282668687'
-
+irb(main):001:0> require 'ph_no_to_word'
+=> true
+irb(main):002:0> PhNoToWord::convert "2282668687"
 Results:
-* catamounts
-* acta, mounts
 * act, amounts
+* act, boo, tots
+* act, boo, tour
+* act, boot, mus
+* act, boot, nus
+* act, boot, our
+* act, con, tots
+* act, con, tour
 * act, contour
-* cat, boot, our
+.......
+.......
+* cat, con, tour
+* cat, contour
+* cat, coo, tots
+* cat, coo, tour
+* cat, coot, mus
+* cat, coot, nus
+* cat, coot, our
+* catamounts
+```
+
+```ruby
+irb(main):004:0> PhNoToWord::convert '6686787825'
+* mot, opt, puck
+* mot, opt, ruck
+* mot, opt, suck
+* mot, opts, taj
+* mot, opus, taj
+* mot, ort, puck
+* mot, ort, ruck
+* mot, ort, suck
+.......
+.......
 ```
 
 ## Contributing
 
-Bug reports and pull requests are welcome on Bitbucket at https://bitbucket.org/abhilashak/ph_no_to_word. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on Github at https://github.com/abhilashak/ph_no_to_word. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 
