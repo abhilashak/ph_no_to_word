@@ -1,8 +1,22 @@
+# frozen_string_literal: true
+
+# This modules helps to write into the log file
+# Usage:
+#   include PhNoToWord::Logger
+#   def do_something
+#     begin
+#       # do something
+#     rescue StandardError => e
+#       log :error, e.message
+#     end
+#   end
 module PhNoToWord
   module Logger
     # Log a PhNoToWord-specific line.
-    def log(message)
-      logger.info("[ph_no_to_word] #{message}") if logging?
+    def log(level, message)
+      File.open('log.txt', 'a') do |f|
+        f.write "#{level}: #{message}"
+      end
     end
   end
 end
