@@ -1,9 +1,7 @@
 # Phone number to word
 
-  ph_no_to_word allows given 10 character phone number to convert into a word
-  that is contained in a dictionary.
-  The phone number should not contain 0 or 1. The matching words contain atleast 3 
-  characters.
+  `ph_no_to_word` allows given 10 character phone number to convert into a word that is contained in a dictionary.
+  The phone number should not contain 0 or 1. The matching words contain atleast 3 characters.
 
 ## Installation
 
