@@ -10,7 +10,6 @@
 # License:: MIT License (http://www.opensource.org/licenses/mit-license.php)
 
 # 2282668687 returns a (long) list with at least these word combinations:
-
 # * catamounts
 # * acta, mounts
 # * act, amounts
@@ -23,6 +22,7 @@ require 'ph_no_to_word/logger'
 require 'ph_no_to_word/helpers'
 require 'ph_no_to_word/split_dictionary'
 require 'fileutils'
+require 'set'
 
 # The base module that handles major methods
 module PhNoToWord
@@ -38,11 +38,10 @@ module PhNoToWord
 
   # @param phone_no [String]
   # @return words [Array]
-  # PhNoToWord::convert "234"
-  # add 2nd parameter: file_path = nil
-  # and add `split_files(file_path)` for splitting the provided dictionary
+  # Ex: PhNoToWord::convert "2282668687"
+  # Add 2nd parameter: file_path = nil
+  # And add `split_files(file_path)` for splitting the provided dictionary
   def self.convert(phone_no = '')
-    puts "Phone number provided is: #{phone_no}"
     raise RequiredArgumentMissingError, ERRORS[:missing_ph] if phone_no.empty?
 
     ph_numbers = phone_no.split(//)
@@ -51,33 +50,81 @@ module PhNoToWord
     end
 
     ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
-    find_word(ph_to_word_mapping)
+    result = find_word(ph_to_word_mapping)
+    map_num_to_word(result, ph_numbers)
+    nil
+  end
+
+  # Position the words matched to corresponding phone number
+  # @param wd_ary [Set] ph_ary [Array] parent_wd [String]
+  # Ex: ph_ary ["2", "2", "8", "2", "6", "6", "8", "6", "8", "7"]
+  # Ex: wd_ary #<Set: {"MOT", "OPT", "PUB", "PUCK", "QUA", "RUB", "RUCK"}>
+  def self.map_num_to_word(wd_ary, ph_ary, parent_wd = '', level = 1, wd_hash = {})
+    wd_ary.each do |wd|
+      wd_hash = arrange_wds(wd_hash, level, wd)
+      total_len = (parent_wd + wd).length
+      full_mapping_to_wd(parent_wd + wd, ph_ary, wd_hash) if total_len == PH_LENGTH
+      next if total_len > MAX_FST_WD_LEN
+
+      map_num_to_word(wd_ary, ph_ary, parent_wd + wd, level + 1, wd_hash) if level < MAXIMUM_WDS
+    end
+  end
+
+  # Add first, second and third words in order to display
+  # @param wd_hash [Hash] level [Integer] wd [String]
+  def self.arrange_wds(wd_hash, level, wd)
+    case level
+    when 1
+      wd_hash[:first] = wd
+      wd_hash[:third] = wd_hash[:second] = nil if wd.length > MAX_FST_WD_LEN
+    when 2
+      wd_hash[:second] = wd
+      wd_hash[:third] = nil if (wd_hash[:first] + wd).length > MAX_FST_WD_LEN
+    when 3
+      wd_hash[:third] = wd
+    end
+    wd_hash
+  end
+
+  # Checks each phone number against the respective word
+  # Ex: ph_numbers ["2", "2", "8", "2", "6", "6", "8", "6", "8", "7"]
+  # Ex: wd_ary     ["c", "a", "t", "a", "m", "o", "u", "n", "t", "s"]
+  def self.full_mapping_to_wd(word, ph_numbers, disply_wrd)
+    word_ary = word.split(//)
+    ph_numbers.each_with_index do |number, index|
+      return false unless NO_CHAR_MAP[number.to_sym].include?(word_ary[index].downcase)
+    end
+    puts disply_wrd.values.compact.join(', ').downcase
   end
 
   # finds the matching words and prints it
   # calls from 0 - 9 chars and finds the matching
   def self.find_word(char_ary = [], start = 0, str = '')
-    loop_proc = proc do |ary, pos, match|
+    @result ||= Set.new
+    loop_phone = proc do |ary, pos, match|
       (ary[pos] || []).each do |char|
         result = print_result(match + char) if pos > 1
-        # call again if there is a scope of second word
-        # if the word matches and have length of less than 7
-        if result && result.length < MAX_FST_WD_LEN
-          find_word(char_ary[result.length..-1], 0, '')
-        end
+        @result.add(result) if result
+        find_next_word(char_ary, result)
         # call again until the last phone no reaches
-        loop_proc.call(ary, pos + 1, match + char) if pos < PH_LENGTH
+        loop_phone.call(ary, pos + 1, match + char) if pos < (PH_LENGTH - 1)
       end
     end
+    loop_phone.call(char_ary, start, str)
+    @result
+  end
 
-    loop_proc.call(char_ary, start, str)
+  # call again if there is a scope of second word
+  # if the word matches and have length of less than 7
+  def self.find_next_word(char_ary, result)
+    return unless result && result.length <= MAX_FST_WD_LEN
+
+    find_word(char_ary[result.length..-1], 0, '')
   end
 
   # search matching word and print it
   def self.print_result(chars_to_match)
-    result = search_word(chars_to_match)
-    puts "====> #{result}" if result
-    result
+    search_word(chars_to_match)
   end
 
   # finds the word with first, second and third character
@@ -129,6 +176,7 @@ module PhNoToWord
 
   class << self
     private :find_word, :write_to_file, :search_word, :word_file_folder_path,
-            :check_file_cnt_matches, :find_file_to_search, :print_result
+            :check_file_cnt_matches, :find_file_to_search, :print_result,
+            :arrange_wds, :find_next_word
   end
 end

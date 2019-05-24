@@ -19,10 +19,10 @@ module PhNoToWord
     }.freeze
     FORBIDDEN_NOS = %w[0 1].freeze
     MAX_SPLIT_DEPTH = 4
-    MIN_WD_LENGTH = 3
+    MIN_WD_LENGTH = MAXIMUM_WDS = 3
     FILE_EXT = '.txt'
     THREE_CHAR_FILE = 'three_char_wrds' + FILE_EXT
-    PH_LENGTH = 9
+    PH_LENGTH = 10
     MAX_FST_WD_LEN = 7
     DEFAULT_WORD_FILES_PATH = '/word_files'
     DEFAULT_WORD_FILE_DIR = DEFAULT_WORD_FILES_PATH + '/level_1'
