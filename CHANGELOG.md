@@ -5,17 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+## [1.1.0]
 
 ## [1.0.0] - 2019-05-25
 ### Added
 - New visual identity by [@abhilashak](https://github.com/abhilashak).
 - ChangeLog file added
-- Return value of `convert` method now provided with an Array for better use of output for developers
+- Return value of `convert` method now provided with an Array for better use of output
+- Validations to length of the phone number
 
 ### Changed
-- Code optimizations
+- Code optimizations, structuring
 - Modified readme file
 - Added the link to the dictionary file, keeping dictionary sample file
+- Validations code
 
 ### Removed
 - Printing of the results

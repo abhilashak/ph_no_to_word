@@ -40,34 +40,58 @@ module PhNoToWord
   # @return words [Array]
   # Ex: PhNoToWord::convert "2282668687"
   # Add 2nd parameter: file_path = nil
-  # And add `split_files(file_path)` for splitting the provided dictionary
+  # And add `split_files(file_path)` for splitting the provided dictionary file
   def self.convert(phone_no = '')
-    raise RequiredArgumentMissingError, ERRORS[:missing_ph] if phone_no.empty?
-
     ph_numbers = phone_no.split(//)
-    unless (ph_numbers & FORBIDDEN_NOS).empty?
-      raise MalformattedArgumentError, ERRORS[:malformed_ph_no]
-    end
+    validate phone_no, ph_numbers
 
     ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
+
     result = find_word(ph_to_word_mapping)
     map_num_to_word(result, ph_numbers)
-    nil
+  end
+
+  # @param phone_no [String]
+  # Populate error if not a valid phone number given
+  def self.validate(phone_no, ph_numbers)
+    raise RequiredArgumentMissingError, ERRORS[:missing_ph] if phone_no.empty?
+
+    unless phone_no.length.eql?(PH_LENGTH)
+      raise MalformattedArgumentError, ERRORS[:ph_length]
+    end
+    return if (ph_numbers & FORBIDDEN_NOS).empty?
+
+    raise MalformattedArgumentError, ERRORS[:malformed_ph_no]
   end
 
   # Position the words matched to corresponding phone number
-  # @param wd_ary [Set] ph_ary [Array] parent_wd [String]
+  # @param wd_ary [Set] ph_ary [Array] parent_wd [String] level [Integer] wd_hash [Hash]
   # Ex: ph_ary ["2", "2", "8", "2", "6", "6", "8", "6", "8", "7"]
   # Ex: wd_ary #<Set: {"MOT", "OPT", "PUB", "PUCK", "QUA", "RUB", "RUCK"}>
+  # wd_hash is a tricky implementation that is using to add the commas in
+  #   between the words found in the result, should try to avoid in future
+  # Ex: level 1, 2, 3 because Maximum 3 words can only contain in the result
+  # Ex: wd_hash { :first => "asasa", :second => "dfdfdf", :third => "ddfdfdf"}
   def self.map_num_to_word(wd_ary, ph_ary, parent_wd = '', level = 1, wd_hash = {})
+    @matching_wd_ary ||= []
+
     wd_ary.each do |wd|
       wd_hash = arrange_result(wd_hash, level, wd)
       total_len = (parent_wd + wd).length
-      full_mapping_to_wd(parent_wd + wd, ph_ary, wd_hash) if total_len == PH_LENGTH
+
+      if total_len == PH_LENGTH
+        result = full_mapping_to_wd(parent_wd + wd, ph_ary, wd_hash)
+        @matching_wd_ary << result if result
+      end
+
       next if total_len > MAX_FST_WD_LEN
 
-      map_num_to_word(wd_ary, ph_ary, parent_wd + wd, level + 1, wd_hash) if level < MAXIMUM_WDS
+      if level < MAXIMUM_WDS
+        map_num_to_word(wd_ary, ph_ary, parent_wd + wd, level + 1, wd_hash)
+      end
     end
+
+    @matching_wd_ary
   end
 
   # Add first, second and third words in order to display
@@ -82,6 +106,7 @@ module PhNoToWord
       wd_hash[:third] = nil if (wd_hash[:first] + word).length > MAX_FST_WD_LEN
     when 3 then wd_hash[:third] = word
     end
+
     wd_hash
   end
 
@@ -90,24 +115,30 @@ module PhNoToWord
   # Ex: wd_ary     ["c", "a", "t", "a", "m", "o", "u", "n", "t", "s"]
   def self.full_mapping_to_wd(word, ph_numbers, disply_wrd)
     word_ary = word.split(//)
+
     ph_numbers.each_with_index do |number, index|
       return false unless NO_CHAR_MAP[number.to_sym].include?(word_ary[index].downcase)
     end
-    puts disply_wrd.values.compact.join(', ').downcase
+
+    disply_wrd.values.compact.join(', ').downcase
   end
 
   # finds the matching words and prints it
   # calls from 0 - 9 chars and finds the matching
   def self.find_word(char_ary = [], start = 0, str = '')
     @result ||= Set.new
+
     loop_phone = proc do |ary, pos, match|
       (ary[pos] || []).each do |char|
         result = print_result(match + char) if pos > 1
+
         @result.add(result) if result
         find_next_word(char_ary, result)
+
         loop_phone.call(ary, pos + 1, match + char) if pos < (PH_LENGTH - 1)
       end
     end
+
     loop_phone.call(char_ary, start, str)
     @result
   end
@@ -129,21 +160,20 @@ module PhNoToWord
   # @param str [String]
   # Level 1: 3 char words
   # Level 2: > 3 char words
+  # Ex: str acfdrt in if condition
+  # Ex: str asde, act, aem in else condition
   def self.search_word(str)
     level = (str.length == MIN_WD_LENGTH ? 1 : 2)
-    # Ex: str acfdrt
     filename = if str.length > MAX_SPLIT_DEPTH
                  str[0..MAX_SPLIT_DEPTH - 1] + FILE_EXT
                else
-                 # Ex: str asde, act, aem
                  str + FILE_EXT
                end
 
     new_file_path = find_file_to_search(level, filename)
     return nil unless File.file?(new_file_path)
 
-    word_found = check_file_cnt_matches(new_file_path, str)
-    word_found
+    check_file_cnt_matches(new_file_path, str)
   end
 
   # if level is 1, search in file three_char_wrds

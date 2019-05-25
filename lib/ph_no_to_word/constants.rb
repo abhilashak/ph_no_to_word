@@ -5,6 +5,7 @@ module PhNoToWord
   module Constants
     ERRORS = {
       missing_ph: 'Please provide a phone number',
+      ph_length: 'Please provide 10 digit phone number',
       malformed_ph_no: 'Cannot contain 0 or 1 in the phone number'
     }.freeze
     NO_CHAR_MAP = {

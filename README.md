@@ -1,6 +1,6 @@
 # Phone number to word
 
-  `ph_no_to_word` allows given 10 character phone number to convert into a word that is contained in a dictionary.
+  `ph_no_to_word` allows given 10 character phone number to convert into a word that is contained in the dictionary.
   The phone number should not contain 0 or 1. The matching words contain atleast 3 characters.
   You can find the dictionary file here: https://gist.github.com/abhilashak/fde080091463ca0f03b12b41e8b66108
 
@@ -28,6 +28,9 @@ After installing the gem goto
 irb(main):001:0> require 'ph_no_to_word'
 => true
 irb(main):002:0> PhNoToWord::convert "2282668687"
+=> ["act, amounts", "act, boo, tots", "act, boo, tour", "act, boot, mus",
+    ....... "cat, coot, mus", "cat, coot, nus", "cat, coot, our", "catamounts"]
+
 Results:
 * act, amounts
 * act, boo, tots
@@ -52,6 +55,19 @@ Results:
 
 ```ruby
 irb(main):004:0> PhNoToWord::convert '6686787825'
+=> ["act, amounts", "act, boo, tots", "act, boo, tour", "act, boot, mus",
+    ....."oot, orts, taj", "motor, truck", "motor, usual", "motortruck", "nouns, truck","nouns, usual"]
+
+Results:
+* act, amounts
+* act, boo, tots
+* act, boo, tour
+* act, boot, mus
+* act, boot, nus
+* act, boot, our
+* act, con, tots
+.......
+.......
 * motortruck
 * motor, truck
 * motor, usual
@@ -60,8 +76,6 @@ irb(main):004:0> PhNoToWord::convert '6686787825'
 * mot, opt, suck
 * noun, struck
 * not, opt, puck
-.......
-.......
 ```
 
 ## Contributing
