@@ -2,6 +2,7 @@
 
   `ph_no_to_word` allows given 10 character phone number to convert into a word that is contained in a dictionary.
   The phone number should not contain 0 or 1. The matching words contain atleast 3 characters.
+  You can find the dictionary file here: https://gist.github.com/abhilashak/fde080091463ca0f03b12b41e8b66108
 
 ## Installation
 
@@ -51,14 +52,14 @@ Results:
 
 ```ruby
 irb(main):004:0> PhNoToWord::convert '6686787825'
+* motortruck
+* motor, truck
+* motor, usual
 * mot, opt, puck
 * mot, opt, ruck
 * mot, opt, suck
-* mot, opts, taj
-* mot, opus, taj
-* mot, ort, puck
-* mot, ort, ruck
-* mot, ort, suck
+* noun, struck
+* not, opt, puck
 .......
 .......
 ```
