@@ -61,7 +61,7 @@ module PhNoToWord
   # Ex: wd_ary #<Set: {"MOT", "OPT", "PUB", "PUCK", "QUA", "RUB", "RUCK"}>
   def self.map_num_to_word(wd_ary, ph_ary, parent_wd = '', level = 1, wd_hash = {})
     wd_ary.each do |wd|
-      wd_hash = arrange_wds(wd_hash, level, wd)
+      wd_hash = arrange_result(wd_hash, level, wd)
       total_len = (parent_wd + wd).length
       full_mapping_to_wd(parent_wd + wd, ph_ary, wd_hash) if total_len == PH_LENGTH
       next if total_len > MAX_FST_WD_LEN
@@ -72,16 +72,15 @@ module PhNoToWord
 
   # Add first, second and third words in order to display
   # @param wd_hash [Hash] level [Integer] wd [String]
-  def self.arrange_wds(wd_hash, level, wd)
+  def self.arrange_result(wd_hash, level, word)
     case level
     when 1
-      wd_hash[:first] = wd
-      wd_hash[:third] = wd_hash[:second] = nil if wd.length > MAX_FST_WD_LEN
+      wd_hash[:first] = word
+      wd_hash[:third] = wd_hash[:second] = nil if word.length > MAX_FST_WD_LEN
     when 2
-      wd_hash[:second] = wd
-      wd_hash[:third] = nil if (wd_hash[:first] + wd).length > MAX_FST_WD_LEN
-    when 3
-      wd_hash[:third] = wd
+      wd_hash[:second] = word
+      wd_hash[:third] = nil if (wd_hash[:first] + word).length > MAX_FST_WD_LEN
+    when 3 then wd_hash[:third] = word
     end
     wd_hash
   end
@@ -106,7 +105,6 @@ module PhNoToWord
         result = print_result(match + char) if pos > 1
         @result.add(result) if result
         find_next_word(char_ary, result)
-        # call again until the last phone no reaches
         loop_phone.call(ary, pos + 1, match + char) if pos < (PH_LENGTH - 1)
       end
     end
@@ -140,6 +138,7 @@ module PhNoToWord
                  # Ex: str asde, act, aem
                  str + FILE_EXT
                end
+
     new_file_path = find_file_to_search(level, filename)
     return nil unless File.file?(new_file_path)
 
@@ -150,12 +149,9 @@ module PhNoToWord
   # if level is 1, search in file three_char_wrds
   # else search in file with name of first 4 char wrd
   def self.find_file_to_search(lvl, filename)
-    file_path = if lvl == 1
-                  word_file_folder_path(lvl) + '/' + THREE_CHAR_FILE
-                else
-                  word_file_folder_path(lvl) + '/' + filename
-                end
-    file_path
+    return (word_file_folder_path(lvl) + '/' + THREE_CHAR_FILE) if lvl == 1
+
+    word_file_folder_path(lvl) + '/' + filename
   end
 
   # @param file_path [String] str [String]
@@ -163,20 +159,21 @@ module PhNoToWord
   def self.check_file_cnt_matches(file_path, str)
     word_found = nil
     File.open(file_path, 'r') do |f|
-      f.each_line do |line|
-        # exit loop if finds the str from dictionary
-        if line.strip.casecmp(str).zero?
-          word_found = line.strip
-          break
-        end
-      end
+      f.each_line { |line| (word_found = line.strip) && break if cmp(line, str) }
     end
     word_found
+  end
+
+  # Compare two strings irrespective of case
+  def self.cmp(line, str)
+    return false unless line && str
+
+    line.strip.casecmp(str.strip).zero?
   end
 
   class << self
     private :find_word, :write_to_file, :search_word, :word_file_folder_path,
             :check_file_cnt_matches, :find_file_to_search, :print_result,
-            :arrange_wds, :find_next_word
+            :arrange_result, :find_next_word, :cmp
   end
 end
