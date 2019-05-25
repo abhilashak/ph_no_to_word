@@ -18,17 +18,19 @@ module PhNoToWord
 
       # @param file_path [String]
       # Ex: file_path: /path/to/dictionary.txt
+      # if condition Create a file based on first 4 characters
+      # else condition Create a file based on first 3 characters
       def split_files(file_path)
         remove_all_files
+
         file_path ||= __dir__ + DEFAULT_DICTIONARY_FILE_PATH
         raise FileNotExists unless File.file?(file_path)
 
         File.open(file_path, 'r').each_line do |word|
           word.strip!
-          # Create a file based on first 4 characters
+
           if word.length > MIN_WD_LENGTH
             write_to_file(word[0..3], word)
-          # Create a file based on first 3 characters
           elsif word.length == MIN_WD_LENGTH
             write_to_file(word, word, 1)
           end
@@ -57,16 +59,19 @@ module PhNoToWord
       # Level 2: text files with 4 char length filename
       def write_to_file(filename, word, level = 2)
         folder_path = word_file_folder_path(level)
+
         new_file_path = if level == 1
                           folder_path + '/' + THREE_CHAR_FILE
                         else
                           folder_path + "/#{filename.strip.downcase}" + FILE_EXT
                         end
+
         new_file = if File.file?(new_file_path)
                      File.open(new_file_path, 'a')
                    else
                      File.new(new_file_path, 'w')
                    end
+
         new_file.puts word
         new_file.close
       end
@@ -82,6 +87,7 @@ module PhNoToWord
     end
 
     extend ClassMethods
+
     def self.included(base)
       base.extend(ClassMethods)
     end
