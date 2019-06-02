@@ -29,10 +29,12 @@ module PhNoToWord
         File.open(file_path, 'r').each_line do |word|
           word.strip!
 
-          if word.length > MIN_WD_LENGTH
-            write_to_file(word[0..3], word)
-          elsif word.length == MIN_WD_LENGTH
-            write_to_file(word, word, 1)
+          if word.length == MIN_WD_LENGTH
+            write_to_file(nil, word, 1)
+          elsif word.length == PH_LENGTH
+            write_to_file(word[0..2], word, 3)
+          elsif word.length > MIN_WD_LENGTH && ![8, 9].include?(word.length)
+            write_to_file(word[0..3], word, 2)
           end
         end
       end
@@ -40,7 +42,8 @@ module PhNoToWord
       # Removes all the files that created by splitting the dictionary
       def remove_all_files
         [DEFAULT_WORD_FILE_DIR,
-         DEFAULT_WD_FILE_DIR_LVL_2].each do |folder|
+         DEFAULT_WD_FILE_DIR_LVL_2,
+         DEFAULT_WD_FILE_DIR_LVL_3].each do |folder|
           directory_name = "#{__dir__}#{folder}"
 
           if File.file?(directory_name)
@@ -57,6 +60,7 @@ module PhNoToWord
       #  if file not exists creates a new file with the filename
       # Level 1: text files with 3 char length filename
       # Level 2: text files with 4 char length filename
+      # Level 3: 10 charcter words
       def write_to_file(filename, word, level = 2)
         folder_path = word_file_folder_path(level)
 
@@ -64,6 +68,8 @@ module PhNoToWord
                           folder_path + '/' + THREE_CHAR_FILE
                         else
                           folder_path + "/#{filename.strip.downcase}" + FILE_EXT
+                        # elsif level == 3
+                        #   folder_path + "/#{filename.strip.downcase}" + FILE_EXT
                         end
 
         new_file = if File.file?(new_file_path)
@@ -80,7 +86,8 @@ module PhNoToWord
       # Level 1: text files with 3 char length filename
       # Level 2: text files with 4 char length filename
       def word_file_folder_path(level = 2)
-        return (__dir__ + DEFAULT_WORD_FILE_DIR) if level == 1
+        return (__dir__ + DEFAULT_WORD_FILE_DIR)     if level == 1
+        return (__dir__ + DEFAULT_WD_FILE_DIR_LVL_3) if level == 3
 
         __dir__ + DEFAULT_WD_FILE_DIR_LVL_2
       end
