@@ -19,6 +19,7 @@ module PhNoToWord
       '9': %w[w x y z]
     }.freeze
     FORBIDDEN_NOS = %w[0 1].freeze
+    FORBN_WD_LENS = %w[7 8].freeze
     MAX_SPLIT_DEPTH = 4
     MIN_WD_LENGTH = MAXIMUM_WDS = 3
     WD_STARTS_AT_INDEX = 2

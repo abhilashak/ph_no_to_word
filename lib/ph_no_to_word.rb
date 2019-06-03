@@ -141,10 +141,10 @@ module PhNoToWord
   # search the word if the combained characters has min WORD length
   # and don't need to search at positions 7, 8 as even if the word is present
   # we cannot make second word to fulfil matching full ph no to words
-  def self.search_it!(wd_to_search, pos, word_no, ph_chars)
-    return unless wd_to_search.length >= MIN_WD_LENGTH && ![7, 8].include?(pos)
+  def self.search_it!(wrd, pos, word_no, ph_chars)
+    return unless wd_satisfy_to_search?(wrd, pos)
 
-    result = search_for_wd_match(wd_to_search)
+    result = search_for_wd_match(wrd)
     return unless result
 
     already_scanned = already_scanned_for_nxt_wd?(word_no, result)
@@ -153,6 +153,12 @@ module PhNoToWord
 
     nxt_wd_ary = ph_chars[result.length..-1]
     search_wd_in_nxt_pos(word_no, already_scanned, nxt_wd_ary)
+  end
+
+  # For word to search it should have minimum word length
+  # and length of the words are not in forbidden list
+  def self.wd_satisfy_to_search?(wrd, pos)
+    wrd.length >= MIN_WD_LENGTH && !FORBN_WD_LENS.include?(pos)
   end
 
   # Checks there is a need for search next word. If yes search for it
@@ -220,27 +226,30 @@ module PhNoToWord
 
   # finds the word with first, second and third character
   # @param str [String]
-  # Level 1: 3 char words
-  # Level 2: > 3 char words
-  # Ex: str acfdrt in if condition
   # Ex: str asde, act, aem in else condition
   def self.search_for_wd_match(str)
-    filename = nil
-    case str.length
-    when MIN_WD_LENGTH
-      level = 1
-    when PH_LENGTH
-      level = 3
-      filename = str[0..2] + FILE_EXT
-    else
-      level = 2
-      filename = str[0..3] + FILE_EXT
-    end
-
+    level, filename = filename_frm_lvl(str)
     new_file_path = find_file_to_search(level, filename)
     return nil unless File.file?(new_file_path)
 
     check_file_cnt_matches(new_file_path, str)
+  end
+
+  # Level 1: 3 char words
+  # Level 2: > 3 char words
+  def self.filename_frm_lvl(str)
+    case str.length
+    when MIN_WD_LENGTH
+      level    = 1
+      filename = nil
+    when PH_LENGTH
+      level    = 3
+      filename = str[0..2] + FILE_EXT
+    else
+      level    = 2
+      filename = str[0..3] + FILE_EXT
+    end
+    [level, filename]
   end
 
   # if level is 1, search in file three_char_wrds
@@ -249,7 +258,6 @@ module PhNoToWord
   def self.find_file_to_search(lvl, filename)
     return (word_file_folder_path(lvl) + '/' + THREE_CHAR_FILE) if lvl == 1
 
-    # return (word_file_folder_path(lvl) + '/' + TEN_CHAR_FILE)   if lvl == 3
     word_file_folder_path(lvl) + '/' + filename
   end
 
