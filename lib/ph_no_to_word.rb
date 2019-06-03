@@ -27,10 +27,10 @@ require 'set'
 # The base module that handles major methods
 module PhNoToWord
   include Constants
+  include Helpers
   include SplitDictionary
   include Error
   extend Logger
-  extend Helpers
 
   def self.extended(base)
     base.send(:include, Constants)
@@ -45,8 +45,8 @@ module PhNoToWord
     validate phone_no, ph_numbers
 
     ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
-    matching_wd_hash = search_in_possible_wds(ph_to_word_mapping)
-    reset_atrributes
+    matching_wd_hash = search_for_wds(ph_to_word_mapping)
+    reset_data_stores
     map_num_to_word_hash(matching_wd_hash, ph_numbers)
   end
 
@@ -121,134 +121,102 @@ module PhNoToWord
   end
 
   # @param ph_chars [Array] pos [Integer] match [String] word_no [Integer]
-  # Ex: ph_chars  [["a", "b", "c"], ["a", "b", "c"], ["t", "u", "v"],....]]
-  # finds the matching words and prints it, calls from 0 - 9 chars and finds 
+  # finds the matching words and prints it, calls from 0 - 9 chars and finds
   # the matching in first, second and third positions
-  # word_no: 0, 1, 2 (first, second and third words)
-  def self.search_in_possible_wds(ph_chars = [], pos = 0, match = '', word_no = 0)
-    @result ||= Set.new
-    @matching_wd_hash ||= { first: [], second: [], third: [] }
-    @scanned_pos ||= []
-
+  # Ex: ph_chars  [["a", "b", "c"], ["a", "b", "c"], ["t", "u", "v"],....]]
+  # Ex: word_no: 0, 1, 2 (first, second and third words)
+  # Ex: match: acts, acr, catamou
+  # Ex: pos: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+  def self.search_for_wds(ph_chars = [], pos = 0, match = '', word_no = 0)
+    set_data_stores
     (ph_chars[pos] || []).each do |char|
       wd_to_search = match + char
 
-      # search the word if the characters has min length to become a WORD
-      # And don't need to search at positions 7, 8 as even if the word is present
-      # we cannot make second word to fulfil matching full ph no to words
-      if wd_to_search.length >= MIN_WD_LENGTH && ![7, 8].include?(pos)
-        result = search_for_wd_match(wd_to_search)
-
-        if result
-          @result.add(result)
-
-          case word_no
-          when 0
-            already_scanned = @matching_wd_hash[:first].map(&:size).include?(result.length)
-            @matching_wd_hash[:first] << result
-          when 1
-            already_scanned = @matching_wd_hash[:second].map(&:size).include?(result.length)
-            @matching_wd_hash[:second] << result
-          when 2
-            @matching_wd_hash[:third] << result
-          end
-
-          if result.length <= MAX_WD_LEN
-            if word_no == 0
-              second_wd_ary = ph_chars[result.length..-1]
-              if !already_scanned && second_wd_ary.length >= MIN_WD_LENGTH
-                search_in_possible_wds(second_wd_ary, 0, '', word_no + 1)
-              end
-            elsif word_no == 1
-              third_wd_ary = ph_chars[result.length..-1]
-              if !already_scanned && third_wd_ary.length >= MIN_WD_LENGTH
-                search_in_possible_wds(third_wd_ary, 0, '', word_no + 1)
-              end
-            end
-
-          end
-        end
-      end
-
-      if word_no == 0
-        search_in_possible_wds(ph_chars, pos + 1, wd_to_search, word_no) if pos <= 6
-      elsif word_no == 1
-        search_in_possible_wds(ph_chars, pos + 1, wd_to_search, word_no) if pos < ph_chars.length
-      elsif word_no == 2
-        search_in_possible_wds(ph_chars, pos + 1, wd_to_search, word_no) if pos < ph_chars.length
-      end
+      search_it!(wd_to_search, pos, word_no, ph_chars)
+      scan_with_nxt_char(word_no, ph_chars, pos, wd_to_search)
     end
-
     @matching_wd_hash
   end
 
-  # reset the stored results data
-  def self.reset_atrributes
-    @result = nil
-    @matching_wd_hash = nil
-    @scanned_pos = nil
+  # search the word if the combained characters has min WORD length
+  # and don't need to search at positions 7, 8 as even if the word is present
+  # we cannot make second word to fulfil matching full ph no to words
+  def self.search_it!(wd_to_search, pos, word_no, ph_chars)
+    return unless wd_to_search.length >= MIN_WD_LENGTH && ![7, 8].include?(pos)
+
+    result = search_for_wd_match(wd_to_search)
+    return unless result
+
+    already_scanned = already_scanned_for_nxt_wd?(word_no, result)
+    add_result_to_store(result, word_no)
+    return unless result.length <= MAX_WD_LEN
+
+    nxt_wd_ary = ph_chars[result.length..-1]
+    search_wd_in_nxt_pos(word_no, already_scanned, nxt_wd_ary)
   end
 
-  # @param ph_mapped_chr_ary [Array] start [Integer] str [String]
-  # Ex: ph_mapped_chr_ary  [["a", "b", "c"], ["a", "b", "c"], ["t", "u", "v"],....]]
-  # finds the matching words and prints it
-  # calls from 0 - 9 chars and finds the matching
-  # level: 1, 2, 3 (first, second and third character)
-  # def self.find_word(ph_mapped_chr_ary = [], start = 0, str = '', level = 0)
-  #   @result ||= Set.new
-  #   @matching_wd_hash ||= { first: [], second: [], third: [] }
-  #   @scanned_pos ||= []
+  # Checks there is a need for search next word. If yes search for it
+  def self.search_wd_in_nxt_pos(wd_no, scanned, wd_ary)
+    return unless first_or_sec_wd?(wd_no) && search_for_nxt_wd?(scanned, wd_ary.length)
 
-  #   loop_phone = proc do |ary, pos, match, lvl|
-  #     (ary[pos] || []).each do |char|
-  #       result = search_for_wd_match(match + char) if pos >= WD_STARTS_AT_INDEX
+    search_for_wds(wd_ary, 0, '', wd_no + 1)
+  end
 
-  #       @result.add(result) if result
-  #       if result
-  #         case lvl
-  #         when 0
-  #           @matching_wd_hash[:first] << result
-  #         when 1
-  #           @matching_wd_hash[:second] << result
-  #         when 2
-  #           @matching_wd_hash[:third] << result
-  #         end
-  #       end
-  #       # call again if there is a scope of second word
-  #       # if the word matches and have length of less than 7
-  #       if result && result.length <= MAX_WD_LEN && !@scanned_pos.include?(result.length)
-  #         puts "@scanned_pos: #{@scanned_pos}"
-  #         puts "lvl: #{lvl}"
-  #         find_word(ph_mapped_chr_ary[result.length..-1], 0, '', lvl + 1)
-  #         @scanned_pos << result.length
-  #       end
-  #       # find_next_word(ph_mapped_chr_ary, result)
+  # if not scanned earlier for next word and word must have min word length
+  # then gives permission for searching the next word
+  def self.search_for_nxt_wd?(scanned, wd_ary_len)
+    !scanned && wd_ary_len >= MIN_WD_LENGTH
+  end
 
-  #       # puts "pos: #{pos}"
-  #       loop_phone.call(ary, pos + 1, match + char, lvl) if within_ph_length(pos)
-  #     end
-  #   end
+  # Adds the matching word to result store and position store
+  def self.add_result_to_store(result, word_no)
+    @result.add(result)
+    return unless first_or_sec_wd?(word_no) || third_wd?(word_no)
 
-  #   loop_phone.call(ph_mapped_chr_ary, start, str, level)
-  #   @result
-  # end
+    @matching_wd_hash[key_frm_word_no(word_no)] << result
+  end
 
-  # def self.within_ph_length(pos)
-  #   pos < (PH_LENGTH - 1)
-  # end
+  def self.already_scanned_for_nxt_wd?(word_no, result)
+    return unless first_or_sec_wd?(word_no)
 
-  # call again if there is a scope of second word
-  # if the word matches and have length of less than 7
-  # def self.find_next_word(ph_mapped_chr_ary, result)
-  #   return unless result && result.length <= MAX_WD_LEN
+    key = first_wd?(word_no) ? :first : :second
+    @matching_wd_hash[key].map(&:size).include?(result.length)
+  end
 
-  #   find_word(ph_mapped_chr_ary[result.length..-1], 0, '')
-  # end
+  # Scan the dictionary words with next character from the mapped ph no
+  def self.scan_with_nxt_char(word_no, ph_chars, pos, wd_to_search)
+    return unless search_again_for_first_wd?(word_no, pos) ||
+                  search_again_for_second_thrid_wd?(word_no, pos, ph_chars)
 
-  # search matching word and print it
-  # def self.print_result(chars_to_match)
-  #   search_for_wd_match(chars_to_match)
-  # end
+    search_for_wds(ph_chars, pos + 1, wd_to_search, word_no)
+  end
+
+  # Search for first word until position 6
+  # Words with 7, 8 first wds will not counts
+  # Checks for 10 character words are done at last separately
+  def self.search_again_for_first_wd?(word_no, pos)
+    first_wd?(word_no) && pos <= MAX_WD_LEN_INDEX
+  end
+
+  # Search for second and thrid word until all remaining positions
+  def self.search_again_for_second_thrid_wd?(word_no, pos, ph_chars)
+    second_wd?(word_no) || third_wd?(word_no) && inside_last_pos?(ph_chars, pos)
+  end
+
+  # sets the variables that stores the data within loops
+  def self.set_data_stores
+    @result           ||= Set.new
+    @matching_wd_hash ||= { first: [], second: [], third: [] }
+    @scanned_pos      ||= []
+    nil
+  end
+
+  # reset the stored results data
+  def self.reset_data_stores
+    @result           = nil
+    @matching_wd_hash = nil
+    @scanned_pos      = nil
+  end
 
   # finds the word with first, second and third character
   # @param str [String]
@@ -295,16 +263,9 @@ module PhNoToWord
     word_found
   end
 
-  # Compare two strings irrespective of case
-  def self.cmp(line, str)
-    return false unless line && str
-
-    line.strip.casecmp(str.strip).zero?
-  end
-
   class << self
     private :cmp, :check_file_cnt_matches, :find_file_to_search,
-            :search_for_wd_match, :reset_atrributes, :search_in_possible_wds,
-            :wds_satisfy_pos?, :map_num_to_word_hash, :validate
+            :search_for_wd_match, :reset_data_stores, :search_for_wds,
+            :wds_satisfy_pos?, :map_num_to_word_hash, :validate, :set_data_stores
   end
 end

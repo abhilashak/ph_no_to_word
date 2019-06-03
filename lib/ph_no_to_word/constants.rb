@@ -26,6 +26,7 @@ module PhNoToWord
     THREE_CHAR_FILE = 'three_char_wrds' + FILE_EXT
     PH_LENGTH = 10
     MAX_WD_LEN = 7
+    MAX_WD_LEN_INDEX = 6
     DEFAULT_WORD_FILES_PATH = '/word_files'
     DEFAULT_WORD_FILE_DIR = DEFAULT_WORD_FILES_PATH + '/level_1'
     DEFAULT_WD_FILE_DIR_LVL_2 = DEFAULT_WORD_FILES_PATH + '/level_2'
