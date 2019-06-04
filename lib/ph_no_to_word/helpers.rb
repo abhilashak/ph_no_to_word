@@ -68,10 +68,17 @@ module PhNoToWord
         second_wd?(word_no) || third_wd?(word_no) && inside_last_pos?(ary, pos)
       end
 
-      # if not scanned earlier for next word and word ary must have min word length
-      # for searching the word, then gives permission for searching the next word
+      # if not scanned earlier for next word and word ary
+      # must have min word length for searching the word,
+      # then gives permission for searching the next word
       def search_for_nxt_wd?(scanned, wd_ary_len)
         !scanned && wd_ary_len >= MIN_WD_LENGTH
+      end
+
+      # If second word and length is less then to accomodate an another word,
+      # then search for third word
+      def stop_mth_with_nxt_wrd?(pos, wds)
+        pos != :second || wds.length > MAX_WD_LEN
       end
 
       # sets the variables that stores the data within loops

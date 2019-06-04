@@ -77,10 +77,12 @@ module PhNoToWord
   def self.match_with_nxt_wd(pos, wd_hash, ph_ary, matches, *wds)
     wd_hash[pos].each do |wd|
       matches << wd_matches_to_ph(ph_ary, wds + [wd])
-      next if pos != :second || (wds.join + wd).length > MAX_WD_LEN
+
+      next if stop_mth_with_nxt_wrd?(pos, wds.join + wd)
 
       matches = match_with_nxt_wd(:third, wd_hash, ph_ary, matches, wds + [wd])
     end
+
     matches.compact
   end
 
@@ -99,6 +101,7 @@ module PhNoToWord
     new_file_path = find_file_to_search(3, filename)
 
     if File.file?(new_file_path) && !files_ary.include?(filename)
+
       File.open(new_file_path, 'r') do |f|
         f.each_line { |line| (matcd_ary << line.strip.downcase) && break if wds_satisfy_pos?(0, line, ph_ary) }
       end
@@ -121,6 +124,7 @@ module PhNoToWord
     ph_numbers[first_pos..final_pos].each_with_index do |number, index|
       return false unless NO_CHAR_MAP[number.to_sym].include?(row_wds_ary[index].downcase)
     end
+
     true
   end
 
@@ -133,12 +137,14 @@ module PhNoToWord
   # Ex: pos: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
   def self.search_for_wds(ph_chars = [], pos = 0, match = '', word_no = 0)
     set_data_stores
+
     (ph_chars[pos] || []).each do |char|
       wd_to_search = match + char
 
       search_it!(wd_to_search, pos, word_no, ph_chars)
       scan_with_nxt_char(word_no, ph_chars, pos, wd_to_search)
     end
+
     @matching_wd_hash
   end
 
@@ -153,6 +159,7 @@ module PhNoToWord
 
     already_scanned = already_scanned_for_nxt_wd?(word_no, result)
     add_result_to_store(result, word_no)
+
     return unless can_accomdte_another_wd?(result)
 
     nxt_wd_ary = ph_chars[result.length..-1]
@@ -198,6 +205,7 @@ module PhNoToWord
   def self.search_for_wd_match(str)
     level, filename = filename_frm_lvl(str)
     new_file_path = find_file_to_search(level, filename)
+
     return nil unless File.file?(new_file_path)
 
     check_file_cnt_matches(new_file_path, str)
@@ -219,6 +227,7 @@ module PhNoToWord
     File.open(file_path, 'r') do |f|
       f.each_line { |line| (wd_found = line.strip) && break if cmp(line, str) }
     end
+
     wd_found
   end
 
