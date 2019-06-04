@@ -17,3 +17,5 @@
 # rbenv config
 .ruby-gemset
 .ruby-version
+
+Gemfile.lock

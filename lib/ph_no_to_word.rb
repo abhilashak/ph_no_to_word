@@ -17,7 +17,7 @@
 # * cat, boot, our
 require 'ph_no_to_word/version'
 require 'ph_no_to_word/constants'
-require 'ph_no_to_word/error'
+require 'ph_no_to_word/validator'
 require 'ph_no_to_word/logger'
 require 'ph_no_to_word/helpers'
 require 'ph_no_to_word/split_dictionary'
@@ -27,156 +27,192 @@ require 'set'
 # The base module that handles major methods
 module PhNoToWord
   include Constants
+  include Helpers
   include SplitDictionary
-  include Error
+  include Validator
   extend Logger
-  extend Helpers
 
   def self.extended(base)
     base.send(:include, Constants)
   end
 
-  # @param phone_no [String]
+  # @param ph_number [String]
   # @return words [Array]
-  # Ex: PhNoToWord::convert "2282668687"
-  # Add 2nd parameter: file_path = nil
-  # And add `split_files(file_path)` for splitting the provided dictionary file
-  def self.convert(phone_no = '')
-    ph_numbers = phone_no.split(//)
-    validate phone_no, ph_numbers
+  # Ex: PhNoToWord::convert '2282668687'
+  # And add `split_files(nil)` in line 1 for splitting the dictionary file
+  def self.convert(ph_number = '')
+    ph_ary = ph_number.split(//)
+    validate ph_number, ph_ary
 
-    ph_to_word_mapping = ph_numbers.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
+    ph_to_word_mapping = ph_ary.map { |ph_no| NO_CHAR_MAP[ph_no.to_sym] }
 
-    result = find_word(ph_to_word_mapping)
-    map_num_to_word(result, ph_numbers)
+    matching_wd_hash = search_for_wds(ph_to_word_mapping)
+
+    reset_data_stores
+    map_num_to_word_hash(matching_wd_hash, ph_ary)
   end
 
-  # @param phone_no [String]
-  # Populate error if not a valid phone number given
-  def self.validate(phone_no, ph_numbers)
-    raise RequiredArgumentMissingError, ERRORS[:missing_ph] if phone_no.empty?
-
-    unless phone_no.length.eql?(PH_LENGTH)
-      raise MalformattedArgumentError, ERRORS[:ph_length]
-    end
-    return if (ph_numbers & FORBIDDEN_NOS).empty?
-
-    raise MalformattedArgumentError, ERRORS[:malformed_ph_no]
-  end
-
-  # Position the words matched to corresponding phone number
-  # @param wd_ary [Set] ph_ary [Array] parent_wd [String] level [Integer] wd_hash [Hash]
+  # Combaine the first second and third words to form the result
+  # @param wd_hash [Hash] ph_ary [Array]
   # Ex: ph_ary ["2", "2", "8", "2", "6", "6", "8", "6", "8", "7"]
-  # Ex: wd_ary #<Set: {"MOT", "OPT", "PUB", "PUCK", "QUA", "RUB", "RUCK"}>
-  # wd_hash is a tricky implementation that is using to add the commas in
-  #   between the words found in the result, should try to avoid in future
-  # Ex: level 1, 2, 3 because Maximum 3 words can only contain in the result
-  # Ex: wd_hash { :first => "asasa", :second => "dfdfdf", :third => "ddfdfdf"}
-  def self.map_num_to_word(wd_ary, ph_ary, parent_wd = '', level = 1, wd_hash = {})
-    @matching_wd_ary ||= []
+  # Ex: wd_hash { :first => "act", :second => "amounts", :third => nil}
+  def self.map_num_to_word_hash(wd_hash = {}, ph_ary)
+    matches = []
+    chkd_ten_chr_fls = []
 
-    wd_ary.each do |wd|
-      wd_hash = arrange_result(wd_hash, level, wd)
-      total_len = (parent_wd + wd).length
+    wd_hash[:first].each do |first_wd|
+      matches = match_with_nxt_wd(:second, wd_hash, ph_ary, matches, first_wd)
 
-      if total_len == PH_LENGTH
-        result = full_mapping_to_wd(parent_wd + wd, ph_ary, wd_hash)
-        @matching_wd_ary << result if result
-      end
-
-      next if total_len > MAX_FST_WD_LEN
-
-      if level < MAXIMUM_WDS
-        map_num_to_word(wd_ary, ph_ary, parent_wd + wd, level + 1, wd_hash)
-      end
+      matches, chkd_ten_chr_fls = find_ten_chr_wds(first_wd,
+                                                   ph_ary,
+                                                   chkd_ten_chr_fls,
+                                                   matches)
     end
-
-    @matching_wd_ary
+    matches
   end
 
-  # Add first, second and third words in order to display
-  # @param wd_hash [Hash] level [Integer] wd [String]
-  def self.arrange_result(wd_hash, level, word)
-    case level
-    when 1
-      wd_hash[:first] = word
-      wd_hash[:third] = wd_hash[:second] = nil if word.length > MAX_FST_WD_LEN
-    when 2
-      wd_hash[:second] = word
-      wd_hash[:third] = nil if (wd_hash[:first] + word).length > MAX_FST_WD_LEN
-    when 3 then wd_hash[:third] = word
+  # combaine the word with next word and check matches the ph number
+  # If the word is second matched word and less than max wd length
+  # then match it with third word
+  def self.match_with_nxt_wd(pos, wd_hash, ph_ary, matches, *wds)
+    wd_hash[pos].each do |wd|
+      matches << wd_matches_to_ph(ph_ary, wds + [wd])
+
+      next if stop_mth_with_nxt_wrd?(pos, wds.join + wd)
+
+      matches = match_with_nxt_wd(:third, wd_hash, ph_ary, matches, wds + [wd])
     end
 
-    wd_hash
+    matches.compact
   end
 
-  # Checks each phone number against the respective word
+  # If the provided word to match with full phone number,
+  # it should match with phone number mapped character and have length 10
+  def self.wd_matches_to_ph(ph_ary, *wrds)
+    return unless wrds.join.length == PH_LENGTH && wds_satisfy_pos?(0, wrds.join, ph_ary)
+
+    wrds.join(', ').downcase
+  end
+
+  # Find 10 character words that matches the given phone number
+  # files_ary: Keeping track of already searched files
+  def self.find_ten_chr_wds(fst_wd, ph_ary, files_ary, matcd_ary)
+    filename = ten_chr_wd_filename(fst_wd)
+    new_file_path = find_file_to_search(3, filename)
+
+    if File.file?(new_file_path) && !files_ary.include?(filename)
+
+      File.open(new_file_path, 'r') do |f|
+        f.each_line { |line| (matcd_ary << line.strip.downcase) && break if wds_satisfy_pos?(0, line, ph_ary) }
+      end
+
+      files_ary << filename
+    end
+
+    [matcd_ary, files_ary]
+  end
+
+  # @param first_pos [Integer] second_wd [String]
+  # Checks each respective word  against the phone number is positioned correct
+  # Ex: first_pos: 3, second_wd: amount
   # Ex: ph_numbers ["2", "2", "8", "2", "6", "6", "8", "6", "8", "7"]
-  # Ex: wd_ary     ["c", "a", "t", "a", "m", "o", "u", "n", "t", "s"]
-  def self.full_mapping_to_wd(word, ph_numbers, disply_wrd)
-    word_ary = word.split(//)
+  # second_wd Poistion like ["--", "--", "--", "a", "m", "o", "u", "n", "t", "--"]
+  def self.wds_satisfy_pos?(first_pos, row_wds, ph_numbers)
+    row_wds_ary = row_wds.split(//)
+    final_pos = first_pos + row_wds.length - 1
 
-    ph_numbers.each_with_index do |number, index|
-      return false unless NO_CHAR_MAP[number.to_sym].include?(word_ary[index].downcase)
+    ph_numbers[first_pos..final_pos].each_with_index do |number, index|
+      return false unless NO_CHAR_MAP[number.to_sym].include?(row_wds_ary[index].downcase)
     end
 
-    disply_wrd.values.compact.join(', ').downcase
+    true
   end
 
-  # finds the matching words and prints it
-  # calls from 0 - 9 chars and finds the matching
-  def self.find_word(char_ary = [], start = 0, str = '')
-    @result ||= Set.new
+  # @param ph_chars [Array] pos [Integer] match [String] word_no [Integer]
+  # finds the matching words and prints it, calls from 0 - 9 chars and finds
+  # the matching in first, second and third positions
+  # Ex: ph_chars  [["a", "b", "c"], ["a", "b", "c"], ["t", "u", "v"],....]]
+  # Ex: word_no: 0, 1, 2 (first, second and third words)
+  # Ex: match: acts, acr, catamou
+  # Ex: pos: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
+  def self.search_for_wds(ph_chars = [], pos = 0, match = '', word_no = 0)
+    set_data_stores
 
-    loop_phone = proc do |ary, pos, match|
-      (ary[pos] || []).each do |char|
-        result = print_result(match + char) if pos > 1
+    (ph_chars[pos] || []).each do |char|
+      wd_to_search = match + char
 
-        @result.add(result) if result
-        find_next_word(char_ary, result)
-
-        loop_phone.call(ary, pos + 1, match + char) if pos < (PH_LENGTH - 1)
-      end
+      search_it!(wd_to_search, pos, word_no, ph_chars)
+      scan_with_nxt_char(word_no, ph_chars, pos, wd_to_search)
     end
 
-    loop_phone.call(char_ary, start, str)
-    @result
+    @matching_wd_hash
   end
 
-  # call again if there is a scope of second word
-  # if the word matches and have length of less than 7
-  def self.find_next_word(char_ary, result)
-    return unless result && result.length <= MAX_FST_WD_LEN
+  # search the word if the combained characters has min WORD length
+  # and don't need to search at positions 7, 8 as even if the word is present
+  # we cannot make second word to fulfil matching full ph no to words
+  def self.search_it!(wrd, pos, word_no, ph_chars)
+    return unless valid_word?(wrd, pos)
 
-    find_word(char_ary[result.length..-1], 0, '')
+    result = search_for_wd_match(wrd)
+    return unless result
+
+    already_scanned = already_scanned_for_nxt_wd?(word_no, result)
+    add_result_to_store(result, word_no)
+
+    return unless can_accomdte_another_wd?(result)
+
+    nxt_wd_ary = ph_chars[result.length..-1]
+    search_wd_in_nxt_pos(word_no, already_scanned, nxt_wd_ary)
   end
 
-  # search matching word and print it
-  def self.print_result(chars_to_match)
-    search_word(chars_to_match)
+  # Checks there is a need for search next word. If yes search for it
+  def self.search_wd_in_nxt_pos(wd_no, scanned, wd_ary)
+    return unless first_or_sec_wd?(wd_no) && search_for_nxt_wd?(scanned, wd_ary.length)
+
+    search_for_wds(wd_ary, 0, '', wd_no + 1)
+  end
+
+  # Adds the matching word to result store and position store
+  def self.add_result_to_store(result, word_no)
+    @result.add(result)
+    return unless first_or_sec_wd?(word_no) || third_wd?(word_no)
+
+    @matching_wd_hash[key_frm_word_no(word_no)] << result
+  end
+
+  # Checks already scanned for next word with same positions by checking
+  # previous result length, for the results with same length don't need to
+  # search again for word from next positions 
+  def self.already_scanned_for_nxt_wd?(word_no, result)
+    return unless first_or_sec_wd?(word_no)
+
+    key = first_wd?(word_no) ? :first : :second
+    @matching_wd_hash[key].map(&:size).include?(result.length)
+  end
+
+  # Scan the dictionary words with next character from the mapped phone number
+  def self.scan_with_nxt_char(word_no, ph_chars, pos, wd_to_search)
+    return unless search_again_for_first_wd?(word_no, pos) ||
+                  search_again_for_second_thrid_wd?(word_no, pos, ph_chars)
+
+    search_for_wds(ph_chars, pos + 1, wd_to_search, word_no)
   end
 
   # finds the word with first, second and third character
   # @param str [String]
-  # Level 1: 3 char words
-  # Level 2: > 3 char words
-  # Ex: str acfdrt in if condition
   # Ex: str asde, act, aem in else condition
-  def self.search_word(str)
-    level = (str.length == MIN_WD_LENGTH ? 1 : 2)
-    filename = if str.length > MAX_SPLIT_DEPTH
-                 str[0..MAX_SPLIT_DEPTH - 1] + FILE_EXT
-               else
-                 str + FILE_EXT
-               end
-
+  def self.search_for_wd_match(str)
+    level, filename = filename_frm_lvl(str)
     new_file_path = find_file_to_search(level, filename)
+
     return nil unless File.file?(new_file_path)
 
     check_file_cnt_matches(new_file_path, str)
   end
 
   # if level is 1, search in file three_char_wrds
+  # if level is 3, search in file ten_char_wds
   # else search in file with name of first 4 char wrd
   def self.find_file_to_search(lvl, filename)
     return (word_file_folder_path(lvl) + '/' + THREE_CHAR_FILE) if lvl == 1
@@ -187,23 +223,18 @@ module PhNoToWord
   # @param file_path [String] str [String]
   # Ex: file_path /path/to/file/act.txt, str: acr
   def self.check_file_cnt_matches(file_path, str)
-    word_found = nil
+    wd_found = nil
     File.open(file_path, 'r') do |f|
-      f.each_line { |line| (word_found = line.strip) && break if cmp(line, str) }
+      f.each_line { |line| (wd_found = line.strip) && break if cmp(line, str) }
     end
-    word_found
-  end
 
-  # Compare two strings irrespective of case
-  def self.cmp(line, str)
-    return false unless line && str
-
-    line.strip.casecmp(str.strip).zero?
+    wd_found
   end
 
   class << self
-    private :find_word, :write_to_file, :search_word, :word_file_folder_path,
-            :check_file_cnt_matches, :find_file_to_search, :print_result,
-            :arrange_result, :find_next_word, :cmp
+    private :cmp, :check_file_cnt_matches, :find_file_to_search,
+            :search_for_wd_match, :reset_data_stores, :search_for_wds,
+            :wds_satisfy_pos?, :map_num_to_word_hash, :validate,
+            :set_data_stores
   end
 end

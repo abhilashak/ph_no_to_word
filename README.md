@@ -2,7 +2,7 @@
 
   `ph_no_to_word` allows given 10 character phone number to convert into a word that is contained in the dictionary.
   The phone number should not contain 0 or 1. The matching words contain atleast 3 characters.
-  You can find the dictionary file here: https://gist.github.com/abhilashak/fde080091463ca0f03b12b41e8b66108
+  You can find the dictionary file here: https://github.com/abhilashak/dictionary_file/blob/master/dictionary.txt
 
 ## Installation
 
