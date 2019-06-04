@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# TODO: for future use
+# Helper
 module PhNoToWord
   # helper module to expand functionalities
   module Helpers

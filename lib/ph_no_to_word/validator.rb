@@ -2,9 +2,9 @@
 
 require 'ph_no_to_word/error'
 
-# TODO: for future use
+# included the error module and validation
 module PhNoToWord
-  # helper module to expand functionalities
+  # helper module to validating the phone number
   module Validator
     # Module methods
     module ClassMethods

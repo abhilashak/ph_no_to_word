@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Moved the splitting code to separate namespace
 ### Removed
 
-## [2.0.0] - 2019-06-02
+## [2.0.0] - 2019-06-05
 ### Added
 - New methods and completely rewritten the logic for high performance improvements
 - Performance Improvements, now get the result in 1/10 of the previous version
