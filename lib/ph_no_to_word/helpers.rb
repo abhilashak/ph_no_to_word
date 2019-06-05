@@ -110,15 +110,10 @@ module PhNoToWord
 
       # Level 1: 3 char words
       # Level 2: > 3 char words
-      # Level 3: 10 char words
       def filename_frm_lvl(str)
-        case str.length
-        when MIN_WD_LENGTH
+        if str.length == MIN_WD_LENGTH
           level    = 1
           filename = nil
-        when PH_LENGTH
-          level    = 3
-          filename = str[0..2] + FILE_EXT
         else
           level    = 2
           filename = str[0..3] + FILE_EXT
