@@ -12,11 +12,12 @@
 #   end
 module PhNoToWord
   module Logger
+    # TODO
     # Log a PhNoToWord-specific line.
-    def log(level, message)
-      File.open('log.txt', 'a') do |f|
-        f.write "#{level}: #{message}"
-      end
-    end
+    # def log(level, message)
+    #   File.open('error.log', 'a') do |f|
+    #     f.write "#{level}: #{message}"
+    #   end
+    # end
   end
 end

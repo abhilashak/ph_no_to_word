@@ -27,7 +27,7 @@ After installing the gem goto
 ```ruby
 irb(main):001:0> require 'ph_no_to_word'
 => true
-irb(main):002:0> PhNoToWord::convert "2282668687"
+irb(main):002:0> PhNoToWord.convert "2282668687"
 => ["act, amounts", "act, boo, tots", "act, boo, tour", "act, boot, mus",
     ....... "cat, coot, mus", "cat, coot, nus", "cat, coot, our", "catamounts"]
 
@@ -54,7 +54,7 @@ Results:
 ```
 
 ```ruby
-irb(main):004:0> PhNoToWord::convert '6686787825'
+irb(main):004:0> PhNoToWord.convert '6686787825'
 => ["act, amounts", "act, boo, tots", "act, boo, tour", "act, boot, mus",
     ....."oot, orts, taj", "motor, truck", "motor, usual", "motortruck", "nouns, truck","nouns, usual"]
 
