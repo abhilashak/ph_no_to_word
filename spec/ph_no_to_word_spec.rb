@@ -5,7 +5,7 @@ RSpec.describe PhNoToWord do
     expect(PhNoToWord::VERSION).not_to be nil
   end
 
-  it `convert the given 10 digit phone number (2282668687) to words 
+  it `convert the given 10 digit phone number (2282668687) to words
       and return an array and expected result` do
     result = PhNoToWord.convert '2282668687'
 
@@ -14,7 +14,7 @@ RSpec.describe PhNoToWord do
     expect(result.size).to eq(53)
   end
 
-  it `convert the given 10 digit phone number (6686787825) to words 
+  it `convert the given 10 digit phone number (6686787825) to words
       and return an array and expected result` do
     result = PhNoToWord.convert '6686787825'
 
@@ -23,7 +23,7 @@ RSpec.describe PhNoToWord do
     expect(result.size).to eq(44)
   end
 
-  it `convert the given 10 digit phone number (8325783555) to words 
+  it `convert the given 10 digit phone number (8325783555) to words
       and return an empty array` do
     result = PhNoToWord.convert '8325783555'
 
