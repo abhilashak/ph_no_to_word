@@ -2,8 +2,11 @@
 
 if RUBY_VERSION >= '2.5.3'
   require 'simplecov'
+  require 'coveralls'
+  Coveralls.wear!
 
-  SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter]
+  SimpleCov.formatters = [SimpleCov::Formatter::HTMLFormatter,
+                          Coveralls::SimpleCov::Formatter]
 
   SimpleCov.start do
     add_filter '/spec'

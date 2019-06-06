@@ -19,3 +19,4 @@
 .ruby-version
 
 Gemfile.lock
+.coveralls.yml

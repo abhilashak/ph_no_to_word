@@ -5,4 +5,5 @@ gemspec
 
 group :test do
   gem 'simplecov', '>= 0.16.1'
+  gem 'coveralls', '>=0.8.23', require: false
 end
