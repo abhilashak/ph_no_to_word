@@ -5,3 +5,11 @@ cache: bundler
 rvm:
   - 2.5.3
 before_install: gem install bundler -v 2.0.1
+notifications:
+    - false
+scripts:
+  - bundle exec rspec spec
+after_script:
+  - bundle exec rake coveralls:push
+after_success:
+- CI=true TRAVIS=true coveralls --verbose
