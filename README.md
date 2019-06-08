@@ -1,5 +1,6 @@
 # Phone number to word
 
+[![Gem Version](https://badge.fury.io/rb/ph_no_to_word.svg)](https://badge.fury.io/rb/ph_no_to_word)
 [![Build Status](https://travis-ci.org/abhilashak/ph_no_to_word.svg?branch=master)](https://travis-ci.org/abhilashak/ph_no_to_word)
 [![Coverage Status](https://coveralls.io/repos/github/abhilashak/ph_no_to_word/badge.svg?branch=master)](https://coveralls.io/github/abhilashak/ph_no_to_word?branch=master)
 [![Maintainability](https://api.codeclimate.com/v1/badges/f2ca1f82e31ac3d81132/maintainability)](https://codeclimate.com/github/abhilashak/ph_no_to_word/maintainability)
