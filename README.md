@@ -19,17 +19,17 @@ Add this line to your application's Gemfile:
 gem 'ph_no_to_word'
 ```
 
-And then execute:
+And then execute
 
     $ bundle
 
-Or install it yourself as:
+Or install it by yourself
 
     $ gem install ph_no_to_word
 
 
 ## Usage
-After installing the gem goto
+After installing the gem do
 
 ```ruby
 irb(main):001:0> require 'ph_no_to_word'
